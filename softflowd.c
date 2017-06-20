@@ -289,15 +289,52 @@ format_flow_brief(struct FLOW *flow)
 {
 	char addr1[64], addr2[64];
 	static char buf[1024];
+        char *protobuf;
 
 	inet_ntop(flow->af, &flow->addr[0], addr1, sizeof(addr1));
 	inet_ntop(flow->af, &flow->addr[1], addr2, sizeof(addr2));
 
+	if(flow->protocol == IPPROTO_IP)
+	{
+		protobuf = "IP";
+	}
+	else if(flow->protocol == IPPROTO_TCP)
+	{
+		protobuf = "TCP";
+	}
+	else if(flow->protocol == IPPROTO_ICMP)
+	{
+		protobuf = "ICMP";
+	}
+	else if(flow->protocol == IPPROTO_UDP)
+	{
+		protobuf = "UDP";
+	}
+	else if(flow->protocol == IPPROTO_IGMP)
+	{
+		protobuf = "IGMP";
+	}
+	else if(flow->protocol == IPPROTO_IPV6)
+	{
+		protobuf = "IPV6";
+	}
+	else if(flow->protocol == IPPROTO_GRE)
+	{
+		protobuf = "GRE";
+	}
+	else if(flow->protocol == IPPROTO_ICMPV6)
+	{
+		protobuf = "ICMPV6";
+	}
+	else 
+	{
+		protobuf = "OTHERS";
+	}
 	snprintf(buf, sizeof(buf), 
-	    "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u",
+	    "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u, %s",
 	    flow->flow_seq,
 	    addr1, ntohs(flow->port[0]), addr2, ntohs(flow->port[1]),
-	    (int)flow->protocol);
+	    (int)flow->protocol, protobuf);
 
 	return (buf);
 }
