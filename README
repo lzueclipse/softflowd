@@ -8,6 +8,7 @@ http://code.google.com/p/softflowd/
 Installing
 ----------
 Building softflowd should be as simple as typing:
+yum install libpcap-devel
 
 ./configure
 make
