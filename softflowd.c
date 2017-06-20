@@ -843,10 +843,53 @@ check_expired(struct FLOWTRACK *ft, struct NETFLOW_TARGET *target, int ex)
 					expiry->reason = R_MAXLIFE;
 
 			if (verbose_flag)
+			{
+				char *reasonbuf;
+				if(expiry->reason == R_GENERAL)
+				{
+					reasonbuf = "R_GENERAL";
+				}
+				else if(expiry->reason == R_TCP)
+				{
+					reasonbuf = "R_TCP";
+				}
+				else if(expiry->reason == R_TCP_RST)
+				{
+					reasonbuf = "R_TCP_RST";
+				}
+				else if(expiry->reason == R_TCP_FIN)
+				{
+					reasonbuf = "R_TCP_FIN";
+				}
+				else if(expiry->reason == R_UDP)
+				{
+					reasonbuf = "R_UDP";
+				}
+				else if(expiry->reason == R_ICMP)
+				{
+					reasonbuf = "R_ICMP";
+				}
+				else if(expiry->reason == R_MAXLIFE)
+				{
+					reasonbuf = "R_MAXLIFE";
+				}
+				else if(expiry->reason == R_OVERBYTES)
+				{
+					reasonbuf = "R_OVERFLOWS";
+				}
+				else if(expiry->reason == R_FLUSH)
+				{
+					reasonbuf = "R_FLUSH";
+				}
+				else
+				{
+					reasonbuf = "OTHERS";
+				}
 				logit(LOG_DEBUG,
 				    "Queuing flow seq:%"PRIu64" (%p) for expiry "
-				    "reason %d", expiry->flow->flow_seq,
-				    expiry->flow, expiry->reason);
+				    "reason %d, %s", expiry->flow->flow_seq,
+				    expiry->flow, expiry->reason, reasonbuf);
+			}
 
 			/* Add to array of expired flows */
 			oldexp = expired_flows;
