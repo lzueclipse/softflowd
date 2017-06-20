@@ -257,6 +257,7 @@ format_flow(struct FLOW *flow)
 {
 	char addr1[64], addr2[64], stime[32], ftime[32];
 	static char buf[1024];
+	char *protobuf;
 
 	inet_ntop(flow->af, &flow->addr[0], addr1, sizeof(addr1));
 	inet_ntop(flow->af, &flow->addr[1], addr2, sizeof(addr2));
@@ -265,14 +266,50 @@ format_flow(struct FLOW *flow)
 	    format_time(flow->flow_start.tv_sec));
 	snprintf(ftime, sizeof(ftime), "%s", 
 	    format_time(flow->flow_last.tv_sec));
+	if(flow->protocol == IPPROTO_IP)
+	{
+		protobuf = "IP";
+	}
+	else if(flow->protocol == IPPROTO_TCP)
+	{
+		protobuf = "TCP";
+	}
+	else if(flow->protocol == IPPROTO_ICMP)
+	{
+		protobuf = "ICMP";
+	}
+	else if(flow->protocol == IPPROTO_UDP)
+	{
+		protobuf = "UDP";
+	}
+	else if(flow->protocol == IPPROTO_IGMP)
+	{
+		protobuf = "IGMP";
+	}
+	else if(flow->protocol == IPPROTO_IPV6)
+	{
+		protobuf = "IPV6";
+	}
+	else if(flow->protocol == IPPROTO_GRE)
+	{
+		protobuf = "GRE";
+	}
+	else if(flow->protocol == IPPROTO_ICMPV6)
+	{
+		protobuf = "ICMPV6";
+	}
+	else 
+	{
+		protobuf = "OTHERS";
+	}
 
-	snprintf(buf, sizeof(buf),  "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u "
+	snprintf(buf, sizeof(buf),  "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u,%s "
 	    "octets>:%u packets>:%u octets<:%u packets<:%u "
 	    "start:%s.%03ld finish:%s.%03ld tcp>:%02x tcp<:%02x "
 	    "flowlabel>:%08x flowlabel<:%08x ",
 	    flow->flow_seq,
 	    addr1, ntohs(flow->port[0]), addr2, ntohs(flow->port[1]),
-	    (int)flow->protocol, 
+	    (int)flow->protocol, protobuf,
 	    flow->octets[0], flow->packets[0], 
 	    flow->octets[1], flow->packets[1], 
 	    stime, (flow->flow_start.tv_usec + 500) / 1000, 
