@@ -1,13 +1,14 @@
 
 #Introduction
 ------------
-The latest source code may be obtained from Google Code:
+Original softflowd may be obtained from Google Code:
 http://code.google.com/p/softflowd/
 Author's github:
 https://github.com/djmdjm
 
+#Mini-softflowd
+-------------
 What I want is only "pcap" related code, so remove netflow part.
-
 Will store data in local RRD and generate statistics graph on local machine.
 
 
