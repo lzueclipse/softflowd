@@ -19,7 +19,6 @@ yum install libpcap-devel
 
 ./configure
 make
-make install
 
 ./softflowd -i eno16777984 -D
 
