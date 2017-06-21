@@ -1,13 +1,13 @@
 Welcome to softflowd, a flow-based network monitor.
 
-Introduction
+#Introduction
 ------------
 The latest source code may be obtained from Google Code:
 http://code.google.com/p/softflowd/
 Author's github:
 https://github.com/djmdjm
 
-Installing
+#Installing
 ----------
 Building softflowd should be as simple as typing:
 yum install libpcap-devel
