@@ -1,4 +1,3 @@
-Welcome to softflowd, a flow-based network monitor.
 
 #Introduction
 ------------
@@ -6,6 +5,11 @@ The latest source code may be obtained from Google Code:
 http://code.google.com/p/softflowd/
 Author's github:
 https://github.com/djmdjm
+
+What I want is only "pcap" related code, so remove netflow part.
+
+Will store data in local RRD and generate statistics graph on local machine.
+
 
 #Installing
 ----------
@@ -17,5 +21,5 @@ yum install libpcap-devel
 make
 make install
 
-./softflowd -i eno16777984 -n localhost:2055 -v 9 -D
+./softflowd -i eno16777984 -D
 

@@ -121,10 +121,7 @@ struct FLOWTRACK {
 	u_int64_t non_ip_packets;		/* # of not-IP packets */
 	u_int64_t bad_packets;			/* # of bad packets */
 	u_int64_t flows_expired;		/* # expired */
-	u_int64_t flows_exported;		/* # of flows sent */
-	u_int64_t flows_dropped;		/* # of flows dropped */
 	u_int64_t flows_force_expired;		/* # of flows forced out */
-	u_int64_t packets_sent;			/* # netflow packets sent */
 	struct STATISTIC duration;		/* Flow duration */
 	struct STATISTIC octets;		/* Bytes (bidir) */
 	struct STATISTIC packets;		/* Packets (bidir) */
@@ -212,19 +209,5 @@ struct EXPIRY {
 
 /* Prototype for functions shared from softflowd.c */
 u_int32_t timeval_sub_ms(const struct timeval *t1, const struct timeval *t2);
-
-/* Prototypes for functions to send NetFlow packets, from netflow*.c */
-int send_netflow_v1(struct FLOW **flows, int num_flows, int nfsock,
-    u_int16_t ifidx, u_int64_t *flows_exported, struct timeval *system_boot_time, 
-    int verbose_flag, struct OPTION *option);
-int send_netflow_v5(struct FLOW **flows, int num_flows, int nfsock,
-    u_int16_t ifidx, u_int64_t *flows_exported, struct timeval *system_boot_time,
-    int verbose_flag, struct OPTION *option);
-int send_netflow_v9(struct FLOW **flows, int num_flows, int nfsock,
-    u_int16_t ifidx, u_int64_t *flows_exported, struct timeval *system_boot_time,
-    int verbose_flag, struct OPTION *option);
-
-/* Force a resend of the flow template */
-void netflow9_resend_template(void);
 
 #endif /* _SOFTFLOWD_H */

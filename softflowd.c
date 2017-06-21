@@ -35,8 +35,6 @@
  * hour) They may also be evicted (in order of age) in situations where
  * there are more flows than slots available.
  *
- * Netflow compatible packets are sent to a specified target host upon
- * flow expiry.
  *
  * As this implementation watches traffic promiscuously, it is likely to
  * place significant load on hosts or gateways on which it is installed.
@@ -91,29 +89,6 @@ static const struct DATALINK lt[] = {
 	{ DLT_LOOP,	 4,  0,  4,  1, 0xffffffff, AF_INET, AF_INET6 },
 #endif
 	{ -1,		-1, -1, -1, -1, 0x00000000,  0xffff,   0xffff },
-};
-
-/* Netflow send functions */
-typedef int (netflow_send_func_t)(struct FLOW **, int, int, u_int16_t,
-	u_int64_t *, struct timeval *, int, struct OPTION *);
-struct NETFLOW_SENDER {
-	int version;
-	netflow_send_func_t *func;
-	int v6_capable;
-};
-
-/* Array of NetFlow export function that we know of. NB. nf[0] is default */
-static const struct NETFLOW_SENDER nf[] = {
-	{ 5, send_netflow_v5, 0 },
-	{ 1, send_netflow_v1, 0 },
-	{ 9, send_netflow_v9, 1 },
-	{ -1, NULL, 0 },
-};
-
-/* Describes a location where we send NetFlow packets to */
-struct NETFLOW_TARGET {
-	int fd;
-	const struct NETFLOW_SENDER *dialect;
 };
 
 /* Signal handlers */
@@ -881,7 +856,7 @@ next_expire(struct FLOWTRACK *ft)
 #define CE_EXPIRE_ALL		-1 /* Expire all flows immediately */
 #define CE_EXPIRE_FORCED	1  /* Only expire force-expired flows */
 static int
-check_expired(struct FLOWTRACK *ft, struct NETFLOW_TARGET *target, int ex)
+check_expired(struct FLOWTRACK *ft, int ex)
 {
 	struct FLOW **expired_flows, **oldexp;
 	int num_expired, i, r;
@@ -994,19 +969,6 @@ check_expired(struct FLOWTRACK *ft, struct NETFLOW_TARGET *target, int ex)
 	
 	/* Processing for expired flows */
 	if (num_expired > 0) {
-		if (target != NULL && target->fd != -1) {
-			r = target->dialect->func(expired_flows, num_expired, 
-			    target->fd, if_index, &ft->flows_exported, 
-			    &ft->system_boot_time,  verbose_flag, &ft->option);
-			if (verbose_flag)
-				logit(LOG_DEBUG, "sent %d netflow packets", r);
-			if (r > 0) {
-				ft->packets_sent += r;
-				/* XXX what if r < num_expired * 2 ? */
-			} else {
-				ft->flows_dropped += num_expired * 2;
-			}
-		}
 		for (i = 0; i < num_expired; i++) {
 			if (verbose_flag) {
 				logit(LOG_DEBUG, "EXPIRED: %s (%p)", 
@@ -1131,8 +1093,6 @@ statistics(struct FLOWTRACK *ft, FILE *out, pcap_t *pcap)
 	    ft->non_ip_packets + ft->bad_packets, ft->non_ip_packets, ft->bad_packets);
 	fprintf(out, "Flows expired: %"PRIu64" (%"PRIu64" forced)\n", 
 	    ft->flows_expired, ft->flows_force_expired);
-	fprintf(out, "Flows exported: %"PRIu64" in %"PRIu64" packets (%"PRIu64" failures)\n",
-	    ft->flows_exported, ft->packets_sent, ft->flows_dropped);
 
 	if (pcap_stats(pcap, &ps) == 0) {
 		fprintf(out, "Packets received by libpcap: %lu\n",
@@ -1310,7 +1270,7 @@ print_timeouts(struct FLOWTRACK *ft, FILE *out)
 }
 
 static int
-accept_control(int lsock, struct NETFLOW_TARGET *target, struct FLOWTRACK *ft,
+accept_control(int lsock, struct FLOWTRACK *ft,
     pcap_t *pcap, int *exit_request, int *stop_collection_flag)
 {
 	unsigned char buf[64], *p;
@@ -1360,14 +1320,8 @@ accept_control(int lsock, struct NETFLOW_TARGET *target, struct FLOWTRACK *ft,
 		*exit_request = 1;
 		ret = 1;
 	} else if (strcmp(buf, "expire-all") == 0) {
-		netflow9_resend_template();
 		fprintf(ctlf, "softflowd[%u]: Expired %d flows.\n", getpid(), 
-		    check_expired(ft, target, CE_EXPIRE_ALL));
-		ret = 0;
-	} else if (strcmp(buf, "send-template") == 0) {
-		netflow9_resend_template();
-		fprintf(ctlf, "softflowd[%u]: Template will be sent at "
-		    "next flow export\n", getpid());
+		    check_expired(ft, CE_EXPIRE_ALL));
 		ret = 0;
 	} else if (strcmp(buf, "delete-all") == 0) {
 		fprintf(ctlf, "softflowd[%u]: Deleted %d flows.\n", getpid(), 
@@ -1842,7 +1796,6 @@ main(int argc, char **argv)
 	struct sockaddr_storage dest;
 	struct FLOWTRACK flowtrack;
 	socklen_t dest_len;
-	struct NETFLOW_TARGET target;
 	struct CB_CTXT cb_ctxt;
 	struct pollfd pl[2];
 
@@ -1852,9 +1805,6 @@ main(int argc, char **argv)
 
 	memset(&dest, '\0', sizeof(dest));
 	dest_len = 0;
-	memset(&target, '\0', sizeof(target));
-	target.fd = -1;
-	target.dialect = &nf[0];
 	hoplimit = -1;
 	bpf_prog = NULL;
 	ctlsock = -1;
@@ -1953,17 +1903,6 @@ main(int argc, char **argv)
 			else
 				ctlsock_path = optarg;
 			break;
-		case 'v':
-			for(i = 0, r = atoi(optarg); nf[i].version != -1; i++) {
-				if (nf[i].version == r)
-					break;
-			}
-			if (nf[i].version == -1) {
-				fprintf(stderr, "Invalid NetFlow version\n");
-				exit(1);
-			}
-			target.dialect = &nf[i];
-			break;
 		case 's':
 			flowtrack.option.sample = atoi(optarg);
 			if (flowtrack.option.sample < 2) {
@@ -1988,18 +1927,7 @@ main(int argc, char **argv)
 
 	/* Will exit on failure */
 	setup_packet_capture(&pcap, &linktype, dev, capfile, bpf_prog,
-	    target.dialect->v6_capable || always_v6);
-	
-	/* Netflow send socket */
-	if (dest.ss_family != 0) {
-		if ((err = getnameinfo((struct sockaddr *)&dest,
-		    dest_len, dest_addr, sizeof(dest_addr), 
-		    dest_serv, sizeof(dest_serv), NI_NUMERICHOST)) == -1) {
-			fprintf(stderr, "getnameinfo: %d\n", err);
-			exit(1);
-		}
-		target.fd = connsock(&dest, dest_len, hoplimit);
-	}
+	    always_v6);
 	
 	/* Control socket */
 	if (ctlsock_path != NULL)
@@ -2042,7 +1970,7 @@ main(int argc, char **argv)
 	memset(&cb_ctxt, '\0', sizeof(cb_ctxt));
 	cb_ctxt.ft = &flowtrack;
 	cb_ctxt.linktype = linktype;
-	cb_ctxt.want_v6 = target.dialect->v6_capable || always_v6;
+	cb_ctxt.want_v6 = always_v6;
 
 	for (r = 0; graceful_shutdown_request == 0; r = 0) {
 		/*
@@ -2073,7 +2001,7 @@ main(int argc, char **argv)
 
 		/* Accept connection on control socket if present */
 		if (ctlsock != -1 && pl[1].revents != 0) {
-			if (accept_control(ctlsock, &target, &flowtrack, pcap,
+			if (accept_control(ctlsock, &flowtrack, pcap,
 			    &exit_request, &stop_collection_flag) != 0)
 				break;
 		}
@@ -2115,7 +2043,7 @@ expiry_check:
 			 * expire flows based on time - instead we only 
 			 * expire flows when the flow table is full. 
 			 */
-			if (check_expired(&flowtrack, &target, 
+			if (check_expired(&flowtrack, 
 			    capfile == NULL ? CE_EXPIRE_NORMAL :
 			    CE_EXPIRE_FORCED) < 0)
 				logit(LOG_WARNING, "Unable to export flows");
@@ -2135,7 +2063,7 @@ expiry_check:
 	/* Flags set by signal handlers or control socket */
 	if (graceful_shutdown_request) {
 		logit(LOG_WARNING, "Shutting down on user request");
-		check_expired(&flowtrack, &target, CE_EXPIRE_ALL);
+		check_expired(&flowtrack, CE_EXPIRE_ALL);
 	} else if (exit_request)
 		logit(LOG_WARNING, "Exiting immediately on user request");
 	else
@@ -2146,9 +2074,6 @@ expiry_check:
 
 	pcap_close(pcap);
 	
-	if (target.fd != -1)
-		close(target.fd);
-
 	unlink(pidfile_path);
 	if (ctlsock_path != NULL)
 		unlink(ctlsock_path);
