@@ -251,6 +251,39 @@ format_time(time_t t)
 
 }
 
+static const char *
+tcp_flags_to_str(uint8_t tcp_flags)
+{
+	static char buf[64];
+	memset(buf, 0, sizeof(buf));
+	
+	if(tcp_flags & TH_FIN)
+	{
+		strcat(buf,",FIN");
+	}
+	if(tcp_flags & TH_SYN)
+	{
+		strcat(buf,",SYN");
+	}
+	if(tcp_flags & TH_RST)
+	{
+		strcat(buf,",RST");
+	}
+	if(tcp_flags & TH_PUSH)
+	{
+		strcat(buf,",PUSH");
+	}
+	if(tcp_flags & TH_URG)
+	{
+		strcat(buf,",URG");
+	}
+	if(tcp_flags & TH_ACK)
+	{
+		strcat(buf,",ACK");
+	}
+	return buf;
+}
+
 /* Format a flow in a verbose and ugly way */
 static const char *
 format_flow(struct FLOW *flow)
@@ -305,7 +338,7 @@ format_flow(struct FLOW *flow)
 
 	snprintf(buf, sizeof(buf),  "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u,%s "
 	    "octets>:%u packets>:%u octets<:%u packets<:%u "
-	    "start:%s.%03ld finish:%s.%03ld tcp>:%02x tcp<:%02x "
+	    "start:%s.%03ld finish:%s.%03ld tcp>:%02x %s tcp<:%02x %s "
 	    "flowlabel>:%08x flowlabel<:%08x ",
 	    flow->flow_seq,
 	    addr1, ntohs(flow->port[0]), addr2, ntohs(flow->port[1]),
@@ -314,7 +347,7 @@ format_flow(struct FLOW *flow)
 	    flow->octets[1], flow->packets[1], 
 	    stime, (flow->flow_start.tv_usec + 500) / 1000, 
 	    ftime, (flow->flow_last.tv_usec + 500) / 1000,
-	    flow->tcp_flags[0], flow->tcp_flags[1],
+	    flow->tcp_flags[0], tcp_flags_to_str(flow->tcp_flags[0]), flow->tcp_flags[1], tcp_flags_to_str(flow->tcp_flags[1]),
 	    flow->ip6_flowlabel[0], flow->ip6_flowlabel[1]);
 
 	return (buf);
