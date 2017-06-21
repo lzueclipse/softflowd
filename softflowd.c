@@ -1594,12 +1594,10 @@ usage(void)
 "  -r pcap_file       Specify packet capture file to read\n"
 "  -t timeout=time    Specify named timeout\n"
 "  -m max_flows       Specify maximum number of flows to track (default %d)\n"
-"  -n host:port       Send Cisco NetFlow(tm)-compatible packets to host:port\n"
 "  -p pidfile         Record pid in specified file\n"
 "                     (default: %s)\n"
 "  -c pidfile         Location of control socket\n"
 "                     (default: %s)\n"
-"  -v 1|5|9           NetFlow export packet version\n"
 "  -L hoplimit        Set TTL/hoplimit for export datagrams\n"
 "  -T full|proto|ip   Set flow tracking level (default: full)\n"
 "  -6                 Track IPv6 flows, regardless of whether selected \n"
@@ -1678,51 +1676,6 @@ set_timeout(struct FLOWTRACK *ft, const char *to_spec)
 	}
 
 	free(name);
-}
-
-static void
-parse_hostport(const char *s, struct sockaddr *addr, socklen_t *len)
-{
-	char *orig, *host, *port;
-	struct addrinfo hints, *res;
-	int herr;
-
-	if ((host = orig = strdup(s)) == NULL) {
-		fprintf(stderr, "Out of memory\n");
-		exit(1);
-	}
-	if ((port = strrchr(host, ':')) == NULL ||
-	    *(++port) == '\0' || *host == '\0') {
-		fprintf(stderr, "Invalid -n argument.\n");
-		usage();
-		exit(1);
-	}
-	*(port - 1) = '\0';
-	
-	/* Accept [host]:port for numeric IPv6 addresses */
-	if (*host == '[' && *(port - 2) == ']') {
-		host++;
-		*(port - 2) = '\0';
-	}
-
-	memset(&hints, '\0', sizeof(hints));
-	hints.ai_socktype = SOCK_DGRAM;
-	if ((herr = getaddrinfo(host, port, &hints, &res)) == -1) {
-		fprintf(stderr, "Address lookup failed: %s\n",
-		    gai_strerror(herr));
-		exit(1);
-	}
-	if (res == NULL || res->ai_addr == NULL) {
-		fprintf(stderr, "No addresses found for [%s]:%s\n", host, port);
-		exit(1);
-	}
-	if (res->ai_addrlen > *len) {
-		fprintf(stderr, "Address too long\n");
-		exit(1);
-	}
-	memcpy(addr, res->ai_addr, res->ai_addrlen);
-	free(orig);
-	*len = res->ai_addrlen;
 }
 
 /* 
@@ -1887,12 +1840,6 @@ main(int argc, char **argv)
 				usage();
 				exit(1);
 			}
-			break;
-		case 'n':
-			/* Will exit on failure */
-			dest_len = sizeof(dest);
-			parse_hostport(optarg, (struct sockaddr *)&dest,
-			    &dest_len);
 			break;
 		case 'p':
 			pidfile_path = optarg;
