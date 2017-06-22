@@ -259,13 +259,57 @@ tcp_flags_to_str(uint8_t tcp_flags)
 	return buf;
 }
 
+static const char *
+protocol_to_str(uint8_t protocol)
+{
+	static char protobuf[64];
+	memset(protobuf, 0, sizeof(protobuf));
+	
+	if(protocol == IPPROTO_IP)
+	{
+		strcat(protobuf, "IP");
+	}
+	else if(protocol == IPPROTO_TCP)
+	{
+		strcat(protobuf, "TCP");
+	}
+	else if(protocol == IPPROTO_ICMP)
+	{
+		strcat(protobuf, "ICMP");
+	}
+	else if(protocol == IPPROTO_UDP)
+	{
+		strcat(protobuf, "UDP");
+	}
+	else if(protocol == IPPROTO_IGMP)
+	{
+		strcat(protobuf, "IGMP");
+	}
+	else if(protocol == IPPROTO_IPV6)
+	{
+		strcat(protobuf, "IPV6");
+	}
+	else if(protocol == IPPROTO_GRE)
+	{
+		strcat(protobuf, "GRE");
+	}
+	else if(protocol == IPPROTO_ICMPV6)
+	{
+		strcat(protobuf, "ICMPV6");
+	}
+	else 
+	{
+		strcat(protobuf, "OTHERS");
+	}
+	return protobuf;
+}
+
 /* Format a flow in a verbose and ugly way */
 static const char *
 format_flow(struct FLOW *flow)
 {
 	char addr1[64], addr2[64], stime[32], ftime[32];
 	static char buf[1024];
-	char *protobuf;
 
 	inet_ntop(flow->af, &flow->addr[0], addr1, sizeof(addr1));
 	inet_ntop(flow->af, &flow->addr[1], addr2, sizeof(addr2));
@@ -274,42 +318,6 @@ format_flow(struct FLOW *flow)
 	    format_time(flow->flow_start.tv_sec));
 	snprintf(ftime, sizeof(ftime), "%s", 
 	    format_time(flow->flow_last.tv_sec));
-	if(flow->protocol == IPPROTO_IP)
-	{
-		protobuf = "IP";
-	}
-	else if(flow->protocol == IPPROTO_TCP)
-	{
-		protobuf = "TCP";
-	}
-	else if(flow->protocol == IPPROTO_ICMP)
-	{
-		protobuf = "ICMP";
-	}
-	else if(flow->protocol == IPPROTO_UDP)
-	{
-		protobuf = "UDP";
-	}
-	else if(flow->protocol == IPPROTO_IGMP)
-	{
-		protobuf = "IGMP";
-	}
-	else if(flow->protocol == IPPROTO_IPV6)
-	{
-		protobuf = "IPV6";
-	}
-	else if(flow->protocol == IPPROTO_GRE)
-	{
-		protobuf = "GRE";
-	}
-	else if(flow->protocol == IPPROTO_ICMPV6)
-	{
-		protobuf = "ICMPV6";
-	}
-	else 
-	{
-		protobuf = "OTHERS";
-	}
 
 	snprintf(buf, sizeof(buf),  "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u,%s "
 	    "octets>:%u packets>:%u octets<:%u packets<:%u "
@@ -317,7 +325,7 @@ format_flow(struct FLOW *flow)
 	    "flowlabel>:%08x flowlabel<:%08x ",
 	    flow->flow_seq,
 	    addr1, ntohs(flow->port[0]), addr2, ntohs(flow->port[1]),
-	    (int)flow->protocol, protobuf,
+	    (int)flow->protocol, protocol_to_str(flow->protocol),
 	    flow->octets[0], flow->packets[0], 
 	    flow->octets[1], flow->packets[1], 
 	    stime, (flow->flow_start.tv_usec + 500) / 1000, 
@@ -334,52 +342,15 @@ format_flow_brief(struct FLOW *flow)
 {
 	char addr1[64], addr2[64];
 	static char buf[1024];
-        char *protobuf;
 
 	inet_ntop(flow->af, &flow->addr[0], addr1, sizeof(addr1));
 	inet_ntop(flow->af, &flow->addr[1], addr2, sizeof(addr2));
 
-	if(flow->protocol == IPPROTO_IP)
-	{
-		protobuf = "IP";
-	}
-	else if(flow->protocol == IPPROTO_TCP)
-	{
-		protobuf = "TCP";
-	}
-	else if(flow->protocol == IPPROTO_ICMP)
-	{
-		protobuf = "ICMP";
-	}
-	else if(flow->protocol == IPPROTO_UDP)
-	{
-		protobuf = "UDP";
-	}
-	else if(flow->protocol == IPPROTO_IGMP)
-	{
-		protobuf = "IGMP";
-	}
-	else if(flow->protocol == IPPROTO_IPV6)
-	{
-		protobuf = "IPV6";
-	}
-	else if(flow->protocol == IPPROTO_GRE)
-	{
-		protobuf = "GRE";
-	}
-	else if(flow->protocol == IPPROTO_ICMPV6)
-	{
-		protobuf = "ICMPV6";
-	}
-	else 
-	{
-		protobuf = "OTHERS";
-	}
 	snprintf(buf, sizeof(buf), 
 	    "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u, %s",
 	    flow->flow_seq,
 	    addr1, ntohs(flow->port[0]), addr2, ntohs(flow->port[1]),
-	    (int)flow->protocol, protobuf);
+	    (int)flow->protocol, protocol_to_str(flow->protocol));
 
 	return (buf);
 }
@@ -848,6 +819,36 @@ next_expire(struct FLOWTRACK *ft)
 	return (ret);
 }
 
+void *
+insert_to_influxdb(struct FLOW *flow)
+{
+	char addr1[64], addr2[64], stime[32], ftime[32];
+	static char buf[1024];
+
+	inet_ntop(flow->af, &flow->addr[0], addr1, sizeof(addr1));
+	inet_ntop(flow->af, &flow->addr[1], addr2, sizeof(addr2));
+
+	snprintf(stime, sizeof(ftime), "%s", 
+	    format_time(flow->flow_start.tv_sec));
+	snprintf(ftime, sizeof(ftime), "%s", 
+	    format_time(flow->flow_last.tv_sec));
+
+	snprintf(buf, sizeof(buf),  "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u,%s "
+	    "octets>:%u packets>:%u octets<:%u packets<:%u "
+	    "start:%s.%03ld finish:%s.%03ld tcp>:%02x %s tcp<:%02x %s "
+	    "flowlabel>:%08x flowlabel<:%08x ",
+	    flow->flow_seq,
+	    addr1, ntohs(flow->port[0]), addr2, ntohs(flow->port[1]),
+	    (int)flow->protocol, protocol_to_str(flow->protocol),
+	    flow->octets[0], flow->packets[0], 
+	    flow->octets[1], flow->packets[1], 
+	    stime, (flow->flow_start.tv_usec + 500) / 1000, 
+	    ftime, (flow->flow_last.tv_usec + 500) / 1000,
+	    flow->tcp_flags[0], tcp_flags_to_str(flow->tcp_flags[0]), flow->tcp_flags[1], tcp_flags_to_str(flow->tcp_flags[1]),
+	    flow->ip6_flowlabel[0], flow->ip6_flowlabel[1]);
+
+}
+
 /*
  * Scan the tree of expiry events and process expired flows. If zap_all
  * is set, then forcibly expire all flows.
@@ -975,6 +976,7 @@ check_expired(struct FLOWTRACK *ft, int ex)
 				    format_flow(expired_flows[i]),
 				    expired_flows[i]);
 			}
+			insert_to_influxdb(expired_flows[i]);
 			update_statistics(ft, expired_flows[i]);
 			flow_put(ft, expired_flows[i]);
 		}
@@ -1777,7 +1779,6 @@ main(int argc, char **argv)
 			return (0);
 		case 'D':
 			verbose_flag = 1;
-			always_v6 = 1;
 			/* FALLTHROUGH */
 		case 'd':
 			dontfork_flag = 1;

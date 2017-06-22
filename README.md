@@ -37,6 +37,8 @@ systemctl enable influxdb
 
 systemctl start influxdb
 
-influx
->create databases lzueclipse;
+curl -POST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE mydb"
+
+curl -GET "http://localhost:8086/query?pretty=true" --data-urlencode "q=show databases"
+
 
