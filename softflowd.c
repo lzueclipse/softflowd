@@ -824,14 +824,9 @@ insert_to_influxdb(struct FLOW *flow)
 {
 	char addr1[64], addr2[64], stime[32], ftime[32];
 	static char buf[1024];
-
+	char resetbuf[2048];
 	inet_ntop(flow->af, &flow->addr[0], addr1, sizeof(addr1));
 	inet_ntop(flow->af, &flow->addr[1], addr2, sizeof(addr2));
-
-	snprintf(stime, sizeof(ftime), "%s", 
-	    format_time(flow->flow_start.tv_sec));
-	snprintf(ftime, sizeof(ftime), "%s", 
-	    format_time(flow->flow_last.tv_sec));
 
 	snprintf(buf, sizeof(buf),  "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u,%s "
 	    "octets>:%u packets>:%u octets<:%u packets<:%u "
