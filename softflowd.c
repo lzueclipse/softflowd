@@ -234,27 +234,27 @@ tcp_flags_to_str(uint8_t tcp_flags)
 	
 	if(tcp_flags & TH_FIN)
 	{
-		strcat(buf,",FIN");
+		strcat(buf," FIN");
 	}
 	if(tcp_flags & TH_SYN)
 	{
-		strcat(buf,",SYN");
+		strcat(buf," SYN");
 	}
 	if(tcp_flags & TH_RST)
 	{
-		strcat(buf,",RST");
+		strcat(buf," RST");
 	}
 	if(tcp_flags & TH_PUSH)
 	{
-		strcat(buf,",PUSH");
+		strcat(buf," PUSH");
 	}
 	if(tcp_flags & TH_URG)
 	{
-		strcat(buf,",URG");
+		strcat(buf," URG");
 	}
 	if(tcp_flags & TH_ACK)
 	{
-		strcat(buf,",ACK");
+		strcat(buf," ACK");
 	}
 	return buf;
 }
@@ -819,29 +819,96 @@ next_expire(struct FLOWTRACK *ft)
 	return (ret);
 }
 
+int ip_is_local(char * hostname , char* ip)
+{
+	int sockfd;  
+	struct addrinfo hints, *servinfo, *p;
+	struct sockaddr_in *h;
+	int rv;
+ 
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC; // use AF_INET6 to force IPv6
+	hints.ai_socktype = SOCK_STREAM;
+
+	if ( (rv = getaddrinfo( hostname, NULL , &hints , &servinfo)) != 0) 
+	{
+        	logit(LOG_ERR, "getaddrinfo: %s\n", gai_strerror(rv));
+		return -1;
+	}
+	for(p = servinfo; p != NULL; p = p->ai_next) 
+	{
+		if(p->ai_family == AF_INET)
+		{
+			h = (struct sockaddr_in *) p->ai_addr;
+			if (strcmp(ip , inet_ntoa( h->sin_addr ) ) == 0)
+			{
+				freeaddrinfo(servinfo);
+				return 0;
+			}
+		}
+	}
+     
+	freeaddrinfo(servinfo); // all done with this structure
+ 	return -1;
+}
 void *
 insert_to_influxdb(struct FLOW *flow)
 {
 	char addr1[64], addr2[64], stime[32], ftime[32];
-	static char buf[1024];
 	char resetbuf[2048];
+	char hostname[1024];
+	char *src_ipv4 = NULL, *dst_ipv4 = NULL;
+	uint16_t src_port, dst_port;
+	char tcp_flags_src_dst[64], tcp_flags_dst_src[64];
+	static char *url = "curl -i -XPOST 'http://10.0.0.4:8086/write?db=mydb' --data-binary";
+	uint64_t total_packets, total_bytes;
+	uint64_t time_start, time_end;
+	//ipv4 for now
+	if(flow->af != AF_INET)
+		return;    
+
+	gethostname(hostname, sizeof(hostname));	
+
 	inet_ntop(flow->af, &flow->addr[0], addr1, sizeof(addr1));
 	inet_ntop(flow->af, &flow->addr[1], addr2, sizeof(addr2));
 
-	snprintf(buf, sizeof(buf),  "seq:%"PRIu64" [%s]:%hu <> [%s]:%hu proto:%u,%s "
-	    "octets>:%u packets>:%u octets<:%u packets<:%u "
-	    "start:%s.%03ld finish:%s.%03ld tcp>:%02x %s tcp<:%02x %s "
-	    "flowlabel>:%08x flowlabel<:%08x ",
-	    flow->flow_seq,
-	    addr1, ntohs(flow->port[0]), addr2, ntohs(flow->port[1]),
-	    (int)flow->protocol, protocol_to_str(flow->protocol),
-	    flow->octets[0], flow->packets[0], 
-	    flow->octets[1], flow->packets[1], 
-	    stime, (flow->flow_start.tv_usec + 500) / 1000, 
-	    ftime, (flow->flow_last.tv_usec + 500) / 1000,
-	    flow->tcp_flags[0], tcp_flags_to_str(flow->tcp_flags[0]), flow->tcp_flags[1], tcp_flags_to_str(flow->tcp_flags[1]),
-	    flow->ip6_flowlabel[0], flow->ip6_flowlabel[1]);
+	
+	memset(tcp_flags_src_dst, 0, sizeof(tcp_flags_src_dst));
+	memset(tcp_flags_dst_src, 0, sizeof(tcp_flags_dst_src));
 
+	if( ip_is_local(hostname, addr1) == 0)
+	{
+		src_ipv4 = addr1;
+		dst_ipv4 = addr2;
+		src_port = ntohs(flow->port[0]);
+		dst_port = ntohs(flow->port[1]);
+		strcat(tcp_flags_src_dst, tcp_flags_to_str(flow->tcp_flags[0]));
+		strcat(tcp_flags_dst_src, tcp_flags_to_str(flow->tcp_flags[1])); 
+	}
+	
+	if( ip_is_local(hostname, addr2) == 0)
+	{
+		src_ipv4 = addr2;
+		dst_ipv4 = addr1;
+		src_port = ntohs(flow->port[1]);
+		dst_port = ntohs(flow->port[0]);
+		strcat(tcp_flags_src_dst, tcp_flags_to_str(flow->tcp_flags[1]));
+		strcat(tcp_flags_dst_src, tcp_flags_to_str(flow->tcp_flags[0])); 
+	}
+	total_packets = flow->packets[0] + flow->packets[1];
+	total_bytes = flow->octets[0] + flow->octets[1];
+	
+	time_start = flow->flow_start.tv_sec * 1000000000;
+	time_end = flow->flow_last.tv_sec * 1000000000;
+
+	snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s,ipv4_src=%s,port_src=%u,ipv4_dst=%s,port_dst=%u proto=\"%s\",tcp_flags_src_dst=\"%s\",tcp_flags_dst_src=\"%s\",totla_bytes=%" PRIu64 ",total_packets=%" PRIu64 ",time_start=%" PRIu64 ",time_end=%" PRIu64 "'"
+	,url, hostname, src_ipv4, src_port, dst_ipv4, dst_port, protocol_to_str(flow->protocol), tcp_flags_src_dst, 
+	tcp_flags_dst_src, total_bytes, total_packets, time_start,time_end);
+	
+
+	logit(LOG_DEBUG,"%s\n",resetbuf);
+	
+	system(resetbuf);
 }
 
 /*
@@ -1597,8 +1664,6 @@ usage(void)
 "                     (default: %s)\n"
 "  -L hoplimit        Set TTL/hoplimit for export datagrams\n"
 "  -T full|proto|ip   Set flow tracking level (default: full)\n"
-"  -6                 Track IPv6 flows, regardless of whether selected \n"
-"                     NetFlow export protocol supports it\n"
 "  -d                 Don't daemonise (run in foreground)\n"
 "  -D                 Debug mode: foreground + verbosity + track v6 flows\n"
 "  -s sampling_rate   Specify periodical sampling rate (denominator)\n"
@@ -1766,9 +1831,6 @@ main(int argc, char **argv)
 
 	while ((ch = getopt(argc, argv, "6hdDL:T:i:r:f:t:n:m:p:c:v:s:")) != -1) {
 		switch (ch) {
-		case '6':
-			always_v6 = 1;
-			break;
 		case 'h':
 			usage();
 			return (0);

@@ -15,6 +15,7 @@ What I want is only "pcap" related code, so remove netflow part.
 
 Will store data in influxdb via HTTP RESTFUL API.
 
+Only for demo, lots of potential bug to fix.
 
 #Installing
 ----------
@@ -42,7 +43,5 @@ curl -POST "http://localhost:8086/query" --data-urlencode "q=CREATE DATABASE myd
 curl -GET "http://localhost:8086/query?pretty=true" --data-urlencode "q=show databases"
 
 curl -GET 'http://localhost:8086/query?pretty=true' --data-urlencode "db=mydb" --data-urlencode "q=drop measurement myflows"
-
-curl -i -XPOST "http://localhost:8086/write?db=mydb" --data-binary 'myflows,host=host-4,ipv4_src=1.1.1.1,port_src=1,ipv4_dst=2.2.2.2,port_dst=2 protocol="TCP",tcp_flags="RST",total_bytes=10000,total_packets=1010,time_start=1000000,time_end=2222222222'
 
 
