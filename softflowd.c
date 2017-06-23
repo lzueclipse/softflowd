@@ -854,14 +854,13 @@ int ip_is_local(char * hostname , char* ip)
 void *
 insert_to_influxdb(struct FLOW *flow)
 {
-	char addr1[64], addr2[64], stime[32], ftime[32];
+	char addr0[64], addr1[64], stime[32], ftime[32];
 	char resetbuf[2048];
+	char *ipv4_src = NULL, *ipv4_dst = NULL;
 	char hostname[1024];
-	char *src_ipv4 = NULL, *dst_ipv4 = NULL;
-	uint16_t src_port, dst_port;
-	char tcp_flags_src_dst[64], tcp_flags_dst_src[64];
+	uint16_t port_src, port_dst;
+	char tcp_flags[64];
 	static char *url = "curl -i -XPOST 'http://10.0.0.4:8086/write?db=mydb' --data-binary";
-	uint64_t total_packets, total_bytes;
 	uint64_t time_start, time_end;
 	//ipv4 for now
 	if(flow->af != AF_INET)
@@ -869,46 +868,45 @@ insert_to_influxdb(struct FLOW *flow)
 
 	gethostname(hostname, sizeof(hostname));	
 
-	inet_ntop(flow->af, &flow->addr[0], addr1, sizeof(addr1));
-	inet_ntop(flow->af, &flow->addr[1], addr2, sizeof(addr2));
+	inet_ntop(flow->af, &flow->addr[0], addr0, sizeof(addr0));
+	inet_ntop(flow->af, &flow->addr[1], addr1, sizeof(addr1));
 
 	
-	memset(tcp_flags_src_dst, 0, sizeof(tcp_flags_src_dst));
-	memset(tcp_flags_dst_src, 0, sizeof(tcp_flags_dst_src));
 
-	if( ip_is_local(hostname, addr1) == 0)
+	if( flow->packets[0] > 0)
 	{
-		src_ipv4 = addr1;
-		dst_ipv4 = addr2;
-		src_port = ntohs(flow->port[0]);
-		dst_port = ntohs(flow->port[1]);
-		strcat(tcp_flags_src_dst, tcp_flags_to_str(flow->tcp_flags[0]));
-		strcat(tcp_flags_dst_src, tcp_flags_to_str(flow->tcp_flags[1])); 
+		ipv4_src = addr0;
+		ipv4_dst = addr1;
+		port_src = ntohs(flow->port[0]);
+		port_dst = ntohs(flow->port[1]);
+		memset(tcp_flags, 0, sizeof(tcp_flags));
+		strcat(tcp_flags, tcp_flags_to_str(flow->tcp_flags[0]));
+		time_start = flow->flow_start.tv_sec * 1000000000;
+		time_end = flow->flow_last.tv_sec * 1000000000;
+		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s,ipv4_src=%s,port_src=%u,ipv4_dst=%s,port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 " proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
+	,url, hostname, ipv4_src, port_src, ipv4_dst, port_dst, time_start, time_end, protocol_to_str(flow->protocol), tcp_flags,flow->octets[0], flow->packets[0]);
+	
+		logit(LOG_DEBUG,"%s\n",resetbuf);
+		system(resetbuf);
 	}
 	
-	if( ip_is_local(hostname, addr2) == 0)
+	if( flow->packets[1] > 0)
 	{
-		src_ipv4 = addr2;
-		dst_ipv4 = addr1;
-		src_port = ntohs(flow->port[1]);
-		dst_port = ntohs(flow->port[0]);
-		strcat(tcp_flags_src_dst, tcp_flags_to_str(flow->tcp_flags[1]));
-		strcat(tcp_flags_dst_src, tcp_flags_to_str(flow->tcp_flags[0])); 
+		ipv4_src = addr1;
+		ipv4_dst = addr0;
+		port_src = ntohs(flow->port[1]);
+		port_dst = ntohs(flow->port[0]);
+		memset(tcp_flags, 0, sizeof(tcp_flags));
+		strcat(tcp_flags, tcp_flags_to_str(flow->tcp_flags[1]));
+		time_start = flow->flow_start.tv_sec * 1000000000;
+		time_end = flow->flow_last.tv_sec * 1000000000;
+		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s,ipv4_src=%s,port_src=%u,ipv4_dst=%s,port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 " proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
+	,url, hostname, ipv4_src, port_src, ipv4_dst, port_dst, time_start, time_end, protocol_to_str(flow->protocol), tcp_flags,flow->octets[1], flow->packets[1]);
+	
+		logit(LOG_DEBUG,"%s\n",resetbuf);
+		system(resetbuf);
 	}
-	total_packets = flow->packets[0] + flow->packets[1];
-	total_bytes = flow->octets[0] + flow->octets[1];
-	
-	time_start = flow->flow_start.tv_sec * 1000000000;
-	time_end = flow->flow_last.tv_sec * 1000000000;
 
-	snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s,ipv4_src=%s,port_src=%u,ipv4_dst=%s,port_dst=%u proto=\"%s\",tcp_flags_src_dst=\"%s\",tcp_flags_dst_src=\"%s\",totla_bytes=%" PRIu64 ",total_packets=%" PRIu64 ",time_start=%" PRIu64 ",time_end=%" PRIu64 "'"
-	,url, hostname, src_ipv4, src_port, dst_ipv4, dst_port, protocol_to_str(flow->protocol), tcp_flags_src_dst, 
-	tcp_flags_dst_src, total_bytes, total_packets, time_start,time_end);
-	
-
-	logit(LOG_DEBUG,"%s\n",resetbuf);
-	
-	system(resetbuf);
 }
 
 /*
