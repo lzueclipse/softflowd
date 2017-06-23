@@ -883,7 +883,7 @@ insert_to_influxdb(struct FLOW *flow)
 		strcat(tcp_flags, tcp_flags_to_str(flow->tcp_flags[0]));
 		time_start = flow->flow_start.tv_sec * 1000000000;
 		time_end = flow->flow_last.tv_sec * 1000000000;
-		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s,ipv4_src=%s,port_src=%u,ipv4_dst=%s,port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 " proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
+		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s ipv4_src=\"%s\",port_src=%u,ipv4_dst=\"%s\",port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 ",proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
 	,url, hostname, ipv4_src, port_src, ipv4_dst, port_dst, time_start, time_end, protocol_to_str(flow->protocol), tcp_flags,flow->octets[0], flow->packets[0]);
 	
 		logit(LOG_DEBUG,"%s\n",resetbuf);
@@ -900,7 +900,7 @@ insert_to_influxdb(struct FLOW *flow)
 		strcat(tcp_flags, tcp_flags_to_str(flow->tcp_flags[1]));
 		time_start = flow->flow_start.tv_sec * 1000000000;
 		time_end = flow->flow_last.tv_sec * 1000000000;
-		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s,ipv4_src=%s,port_src=%u,ipv4_dst=%s,port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 " proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
+		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s ipv4_src=\"%s\",port_src=%u,ipv4_dst=\"%s\",port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 ",proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
 	,url, hostname, ipv4_src, port_src, ipv4_dst, port_dst, time_start, time_end, protocol_to_str(flow->protocol), tcp_flags,flow->octets[1], flow->packets[1]);
 	
 		logit(LOG_DEBUG,"%s\n",resetbuf);
