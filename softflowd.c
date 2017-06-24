@@ -1436,59 +1436,6 @@ accept_control(int lsock, struct FLOWTRACK *ft,
 	return (ret);
 }
 
-static int
-connsock(struct sockaddr_storage *addr, socklen_t len, int hoplimit)
-{
-	int s;
-	unsigned int h6;
-	unsigned char h4;
-	struct sockaddr_in *in4 = (struct sockaddr_in *)addr;
-	struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)addr;
-
-	if ((s = socket(addr->ss_family, SOCK_DGRAM, 0)) == -1) {
-		fprintf(stderr, "socket() error: %s\n", 
-		    strerror(errno));
-		exit(1);
-	}
-	if (connect(s, (struct sockaddr*)addr, len) == -1) {
-		fprintf(stderr, "connect() error: %s\n",
-		    strerror(errno));
-		exit(1);
-	}
-
-	switch (addr->ss_family) {
-	case AF_INET:
-		/* Default to link-local TTL for multicast addresses */
-		if (hoplimit == -1 && IN_MULTICAST(in4->sin_addr.s_addr))
-			hoplimit = 1;
-		if (hoplimit == -1)
-			break;
-		h4 = hoplimit;
-		if (setsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL,
-		    &h4, sizeof(h4)) == -1) {
-			fprintf(stderr, "setsockopt(IP_MULTICAST_TTL, "
-			    "%u): %s\n", h4, strerror(errno));
-			exit(1);
-		}
-		break;
-	case AF_INET6:
-		/* Default to link-local hoplimit for multicast addresses */
-		if (hoplimit == -1 && IN6_IS_ADDR_MULTICAST(&in6->sin6_addr))
-			hoplimit = 1;
-		if (hoplimit == -1)
-			break;
-		h6 = hoplimit;
-		if (setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,
-		    &h6, sizeof(h6)) == -1) {
-			fprintf(stderr, "setsockopt(IPV6_MULTICAST_HOPS, %u): "
-			"%s\n", h6, strerror(errno));
-			exit(1);
-		}
-	}
-
-	return(s);
-}
-
 static int 
 unix_listener(const char *path)
 {

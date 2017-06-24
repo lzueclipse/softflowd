@@ -44,4 +44,13 @@ curl -GET "http://localhost:8086/query?pretty=true" --data-urlencode "q=show dat
 
 curl -GET 'http://localhost:8086/query?pretty=true' --data-urlencode "db=mydb" --data-urlencode "q=drop measurement myflows"
 
+#grafana
+---------
+yum install https://s3-us-west-2.amazonaws.com/grafana-releases/release/grafana-4.3.1-1.x86_64.rpm
+systemctl daemon-reload
+systemctl start grafana-server
+systemctl status grafana-server
+systemctl enable grafana-server.service
+
+
 
