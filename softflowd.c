@@ -1758,6 +1758,9 @@ main(int argc, char **argv)
 	socklen_t dest_len;
 	struct CB_CTXT cb_ctxt;
 	struct pollfd pl[2];
+	struct timeval now;
+	static struct timeval since_last_expire_all;
+	gettimeofday(&since_last_expire_all, NULL);
 
 	closefrom(STDERR_FILENO + 1);
 
@@ -2007,6 +2010,14 @@ expiry_check:
 				    flowtrack.num_flows - flowtrack.max_flows);
 				goto expiry_check;
 			}
+		}
+
+		gettimeofday(&now, NULL);
+		if( (now.tv_sec - since_last_expire_all.tv_sec) > 5)
+		{
+			check_expired(&flowtrack, CE_EXPIRE_ALL);
+			gettimeofday(&since_last_expire_all, NULL);
+			logit(LOG_DEBUG, "CE_EXPIRE_ALL in 5s");
 		}
 	}
 
