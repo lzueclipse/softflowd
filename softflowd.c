@@ -2012,6 +2012,7 @@ expiry_check:
 			}
 		}
 
+#if 0
 		gettimeofday(&now, NULL);
 		if( (now.tv_sec - since_last_expire_all.tv_sec) > 5)
 		{
@@ -2019,6 +2020,7 @@ expiry_check:
 			gettimeofday(&since_last_expire_all, NULL);
 			logit(LOG_DEBUG, "CE_EXPIRE_ALL in 5s");
 		}
+#endif
 	}
 
 	/* Flags set by signal handlers or control socket */
