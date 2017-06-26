@@ -14,7 +14,10 @@ https://github.com/djmdjm
 What I want is only "pcap" related code, so remove netflow part.
 
 Will store data in influxdb via HTTP RESTFUL API.
+softflowd.c "insert_to_influxdb"
+
 Will store data in elasticsearch via HTTP RESTFUL API.
+softflowd.c "insert_to_elasticsearch"
 
 Only for demo, lots of potential bug to fix.
 
