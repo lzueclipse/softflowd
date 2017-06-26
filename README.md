@@ -77,11 +77,11 @@ vm.max_map_count=262144
 
 3)edit /etc/security/limits.conf
 
-* soft nofile 655350
+\* soft nofile 655350
 
-* hard nofile 655350
+\* hard nofile 655350
 
-* soft core  unlimited
+\* soft core  unlimited
 
 4)yum install java-1.8.0-openjdk-devel
 
@@ -125,15 +125,13 @@ http.port: 9200
 
 -Xmx12g
 
-9)
-mkdir -p /esdata/data
+9)mkdir -p /esdata/data
 
 mkdir -p /esdata/logs
 
 chown -R elasticsearch:elasticsearch /esdata
 
-10)
-systemctl daemon-reload
+10)systemctl daemon-reload
 
 systemctl enable elasticsearch.service
 
