@@ -42,7 +42,6 @@
 
 #include "common.h"
 #include "sys-tree.h"
-#include "convtime.h"
 #include "softflowd.h"
 #include "treetype.h"
 #include "freelist.h"
@@ -909,6 +908,64 @@ insert_to_influxdb(struct FLOW *flow)
 
 }
 
+void *
+insert_to_elasticsearch(struct FLOW *flow)
+{
+	char addr0[64], addr1[64], stime[32], ftime[32];
+	char resetbuf[2048];
+	char *ipv4_src = NULL, *ipv4_dst = NULL;
+	char hostname[1024];
+	uint16_t port_src, port_dst;
+	char tcp_flags[64];
+	static char *url = "curl -i -XPOST 'http://10.0.0.4:8086/write?db=mydb' --data-binary";
+	uint64_t time_start, time_end;
+	//ipv4 for now
+	if(flow->af != AF_INET)
+		return;    
+
+	gethostname(hostname, sizeof(hostname));	
+
+	inet_ntop(flow->af, &flow->addr[0], addr0, sizeof(addr0));
+	inet_ntop(flow->af, &flow->addr[1], addr1, sizeof(addr1));
+
+	
+
+	if( flow->packets[0] > 0)
+	{
+		ipv4_src = addr0;
+		ipv4_dst = addr1;
+		port_src = ntohs(flow->port[0]);
+		port_dst = ntohs(flow->port[1]);
+		memset(tcp_flags, 0, sizeof(tcp_flags));
+		strcat(tcp_flags, tcp_flags_to_str(flow->tcp_flags[0]));
+		time_start = flow->flow_start.tv_sec * 1000000000;
+		time_end = flow->flow_last.tv_sec * 1000000000;
+		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s ipv4_src=\"%s\",port_src=%u,ipv4_dst=\"%s\",port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 ",proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
+	,url, hostname, ipv4_src, port_src, ipv4_dst, port_dst, time_start, time_end, protocol_to_str(flow->protocol), tcp_flags,flow->octets[0], flow->packets[0]);
+	
+		logit(LOG_DEBUG,"%s\n",resetbuf);
+		system(resetbuf);
+	}
+	
+	if( flow->packets[1] > 0)
+	{
+		ipv4_src = addr1;
+		ipv4_dst = addr0;
+		port_src = ntohs(flow->port[1]);
+		port_dst = ntohs(flow->port[0]);
+		memset(tcp_flags, 0, sizeof(tcp_flags));
+		strcat(tcp_flags, tcp_flags_to_str(flow->tcp_flags[1]));
+		time_start = flow->flow_start.tv_sec * 1000000000;
+		time_end = flow->flow_last.tv_sec * 1000000000;
+		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s ipv4_src=\"%s\",port_src=%u,ipv4_dst=\"%s\",port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 ",proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
+	,url, hostname, ipv4_src, port_src, ipv4_dst, port_dst, time_start, time_end, protocol_to_str(flow->protocol), tcp_flags,flow->octets[1], flow->packets[1]);
+	
+		logit(LOG_DEBUG,"%s\n",resetbuf);
+		system(resetbuf);
+	}
+
+}
+
 /*
  * Scan the tree of expiry events and process expired flows. If zap_all
  * is set, then forcibly expire all flows.
@@ -1601,7 +1658,6 @@ usage(void)
 "This is %s version %s. Valid commandline options:\n"
 "  -i [idx:]interface Specify interface to listen on\n"
 "  -r pcap_file       Specify packet capture file to read\n"
-"  -t timeout=time    Specify named timeout\n"
 "  -m max_flows       Specify maximum number of flows to track (default %d)\n"
 "  -p pidfile         Record pid in specified file\n"
 "                     (default: %s)\n"
@@ -1629,60 +1685,6 @@ usage(void)
 	    DEFAULT_TCP_FIN_TIMEOUT, DEFAULT_UDP_TIMEOUT, DEFAULT_ICMP_TIMEOUT,
 	    DEFAULT_GENERAL_TIMEOUT, DEFAULT_MAXIMUM_LIFETIME,
 	    DEFAULT_EXPIRY_INTERVAL);
-}
-
-static void
-set_timeout(struct FLOWTRACK *ft, const char *to_spec)
-{
-	char *name, *value;
-	int timeout;
-
-	if ((name = strdup(to_spec)) == NULL) {
-		fprintf(stderr, "Out of memory\n");
-		exit(1);
-	}
-	if ((value = strchr(name, '=')) == NULL ||
-	    *(++value) == '\0') {
-		fprintf(stderr, "Invalid -t option \"%s\".\n", name);
-		usage();
-		exit(1);
-	}
-	*(value - 1) = '\0';
-	timeout = convtime(value);
-	if (timeout < 0) {
-		fprintf(stderr, "Invalid -t timeout.\n");
-		usage();
-		exit(1);
-	}
-	if (strcmp(name, "tcp") == 0)
-		ft->tcp_timeout = timeout;
-	else if (strcmp(name, "tcp.rst") == 0)
-		ft->tcp_rst_timeout = timeout;
-	else if (strcmp(name, "tcp.fin") == 0)
-		ft->tcp_fin_timeout = timeout;
-	else if (strcmp(name, "udp") == 0)
-		ft->udp_timeout = timeout;
-	else if (strcmp(name, "icmp") == 0)
-		ft->icmp_timeout = timeout;
-	else if (strcmp(name, "general") == 0)
-		ft->general_timeout = timeout;
-	else if (strcmp(name, "maxlife") == 0)
-		ft->maximum_lifetime = timeout;
-	else if (strcmp(name, "expint") == 0)
-		ft->expiry_interval = timeout;
-	else {
-		fprintf(stderr, "Invalid -t name.\n");
-		usage();
-		exit(1);
-	}
-
-	if (ft->general_timeout == 0) {
-		fprintf(stderr, "\"general\" flow timeout must be "
-		    "greater than zero\n");
-		exit(1);
-	}
-
-	free(name);
 }
 
 /* 
@@ -1813,10 +1815,6 @@ main(int argc, char **argv)
 			capfile = optarg;
 			dontfork_flag = 1;
 			ctlsock_path = NULL;
-			break;
-		case 't':
-			/* Will exit on failure */
-			set_timeout(&flowtrack, optarg); 
 			break;
 		case 'T':
 			if (strcasecmp(optarg, "full") == 0)
