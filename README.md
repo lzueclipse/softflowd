@@ -183,22 +183,18 @@ curl -XPUT 'localhost:9200/my_index?pretty' -H 'Content-Type: application/json' 
 				"tcp_flags": { "index": "not_analyzed", "type": "text" },
 
 				"protocol": { "index": "not_analyzed", "type": "text" },
-
+				
 				"first_switched": { "index": "not_analyzed", "type": "date"},
+				
+				"first_switched_text": { "index": "not_analyzed", "type": "text"},
 
 				"last_switched": { "index": "not_analyzed", "type": "date"},
-
-				"first_switched_readable": { "index": "not_analyzed", "type": "date"},
-
-				"last_switched_readable": { "index": "not_analyzed", "type": "date"},
+				
+				"last_switched_text": { "index": "not_analyzed", "type": "text"},
 
 				"in_bytes": { "index": "not_analyzed", "type": "long" },
 
-				"in_pkts": { "index": "not_analyzed", "type": "long" },
-
-				"out_bytes": { "index": "not_analyzed", "type": "long" },
-
-				"out_pkts": { "index": "not_analyzed", "type": "long" }
+				"in_pkts": { "index": "not_analyzed", "type": "long" }
 
 
 			}
@@ -211,3 +207,53 @@ curl -XPUT 'localhost:9200/my_index?pretty' -H 'Content-Type: application/json' 
 
 curl -XGET 'localhost:9200/my_index/_settings,_mappings?pretty'
 
+curl -XPOST 'localhost:9200/my_index/my_flows/?pretty' -H 'Content-Type: application/json' -d'
+{
+	"aget_host_name" : "host-4",
+
+	"ipv4_dst_addr"  : "2.2.2.2",
+
+	"ipv4_src_addr"  : "1.1.1.1",
+
+	"l4_dst_port"    : "2",
+
+	"l4_src_port"    : "1",
+
+	"tcp_flags"      : "RST",
+
+	"protocol"	     :  "TCP",
+
+	"first_switched" :  "2009-11-15T14:12:12",
+
+	"first_switched_text" :  "2009-11-15T14:12:12",
+
+	"last_switched"	 :  "2009-11-15T15:11:11",
+
+	"last_switched_text" :  "2009-11-15T15:11:11",
+
+	"in_bytes"       : "12345678",
+
+	"in_pkts"        : "100"
+}
+'
+
+curl -XGET 'localhost:9200/my_index/my_flows/_search?q=*&sort=ipv4_src_addr:asc&pretty&pretty'
+
+curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: application/json' -d'
+{
+  "query": { "match_all": {} },
+  "sort": [
+    { "ipv4_src_addr": "asc" }
+  ]
+}
+'
+
+curl -XPOST 'localhost:9200/my_index/my_flows/_delete_by_query?pretty' -H 'Content-Type: application/json' -d'
+{
+  "query": { 
+    "match": {
+      "ipv4_src_addr": "1.1.1.1"
+    }
+  }
+}
+'
