@@ -150,32 +150,61 @@ curl -XDELETE 'localhost:9200/my_index?pretty'
 
 curl -XPUT 'localhost:9200/my_index?pretty' -H 'Content-Type: application/json' -d'
 {
+	
 	"settings" : {
-        	"index" : {
-            	"number_of_shards" : 5, 
-            	"number_of_replicas" : 1 
-        	}
-    	},
-	"mappings" : {
-		"my_flows" :{
-			"properties" : {
-				"agent_host_name": { "index": "analyzed", "type": "text" },
-				"ipv4_dst_addr": { "index": "analyzed", "type": "ip" },
-				"ipv4_src_addr": { "index": "analyzed", "type": "ip" },
-				"l4_dst_port": { "index": "not_analyzed", "type": "long" },
-				"l4_src_port": { "index": "not_analyzed", "type": "long" },
-				"tcp_flags": { "index": "not_analyzed", "type": "text" },
-				"protocol": { "index": "not_analyzed", "type": "text" },
-				"first_switched": { "index": "not_analyzed", "type": "date"},
-				"last_switched": { "index": "not_analyzed", "type": "date"},
-				"first_switched_readable": { "index": "not_analyzed", "type": "date"},
-				"last_switched_readable": { "index": "not_analyzed", "type": "date"},
-				"in_bytes": { "index": "not_analyzed", "type": "long" },
-				"in_pkts": { "index": "not_analyzed", "type": "long" },
-				"out_bytes": { "index": "not_analyzed", "type": "long" },
-				"out_pkts": { "index": "not_analyzed", "type": "long" }
-			}
+        
+		"index" : {
+            
+		"number_of_shards" : 5, 
+        
+	    	"number_of_replicas" : 1 
+        
 		}
+    	
+	},
+	
+	"mappings" : {
+	
+		"my_flows" :{
+	
+			"properties" : {
+		
+				"agent_host_name": { "index": "analyzed", "type": "text" },
+		
+				"ipv4_dst_addr": { "index": "analyzed", "type": "ip" },
+		
+				"ipv4_src_addr": { "index": "analyzed", "type": "ip" },
+		
+				
+				"l4_dst_port": { "index": "not_analyzed", "type": "long" },
+
+				"l4_src_port": { "index": "not_analyzed", "type": "long" },
+
+				"tcp_flags": { "index": "not_analyzed", "type": "text" },
+
+				"protocol": { "index": "not_analyzed", "type": "text" },
+
+				"first_switched": { "index": "not_analyzed", "type": "date"},
+
+				"last_switched": { "index": "not_analyzed", "type": "date"},
+
+				"first_switched_readable": { "index": "not_analyzed", "type": "date"},
+
+				"last_switched_readable": { "index": "not_analyzed", "type": "date"},
+
+				"in_bytes": { "index": "not_analyzed", "type": "long" },
+
+				"in_pkts": { "index": "not_analyzed", "type": "long" },
+
+				"out_bytes": { "index": "not_analyzed", "type": "long" },
+
+				"out_pkts": { "index": "not_analyzed", "type": "long" }
+
+
+			}
+
+		}
+
 	}
 }
 '
