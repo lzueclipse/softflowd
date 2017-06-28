@@ -242,3 +242,26 @@ curl -XPOST 'localhost:9200/my_index/my_flows/_delete_by_query?pretty' -H 'Conte
 
 }
 '
+
+curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: application/json' -d'
+
+{
+
+  "query": {
+
+    "bool": {
+
+      "should": [
+
+        { "match": { "first_switched": "1498624757" } },
+
+        { "match": { "last_switched": "1498624762" } }
+
+      ]
+
+    }
+
+  }
+
+}'
+
