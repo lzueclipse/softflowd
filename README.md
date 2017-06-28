@@ -174,15 +174,18 @@ curl -XPUT 'localhost:9200/my_index?pretty' -H 'Content-Type: application/json' 
 				"ipv4_dst_addr": { "index": "analyzed", "type": "ip" },
 		
 				"ipv4_src_addr": { "index": "analyzed", "type": "ip" },
-		
 				
 				"l4_dst_port": { "index": "not_analyzed", "type": "long" },
 
 				"l4_src_port": { "index": "not_analyzed", "type": "long" },
 
-				"tcp_flags": { "index": "not_analyzed", "type": "text" },
+				"tcp_flags": { "index": "not_analyzed", "type": "long" },
+				
+				"tcp_flags_text": { "index": "not_analyzed", "type": "text" },
 
-				"protocol": { "index": "not_analyzed", "type": "text" },
+				"protocol": { "index": "not_analyzed", "type": "long" },
+				
+				"protocol_text": { "index": "not_analyzed", "type": "text" },
 				
 				"first_switched": { "index": "not_analyzed", "type": "date"},
 				
@@ -206,38 +209,6 @@ curl -XPUT 'localhost:9200/my_index?pretty' -H 'Content-Type: application/json' 
 '
 
 curl -XGET 'localhost:9200/my_index/_settings,_mappings?pretty'
-
-curl -XPOST 'localhost:9200/my_index/my_flows/?pretty' -H 'Content-Type: application/json' -d'
-
-{
-	"aget_host_name" : "host-4",
-
-	"ipv4_dst_addr"  : "2.2.2.2",
-
-	"ipv4_src_addr"  : "1.1.1.1",
-
-	"l4_dst_port"    : "2",
-
-	"l4_src_port"    : "1",
-
-	"tcp_flags"      : "RST",
-
-	"protocol"	     :  "TCP",
-
-	"first_switched" :  "2009-11-15T14:12:12",
-
-	"first_switched_text" :  "2009-11-15T14:12:12",
-
-	"last_switched"	 :  "2009-11-15T15:11:11",
-
-	"last_switched_text" :  "2009-11-15T15:11:11",
-
-	"in_bytes"       : "12345678",
-
-	"in_pkts"        : "100"
-
-}
-'
 
 curl -XGET 'localhost:9200/my_index/my_flows/_search?q=*&sort=ipv4_src_addr:asc&pretty&pretty'
 

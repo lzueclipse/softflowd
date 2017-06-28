@@ -853,7 +853,7 @@ int ip_is_local(char * hostname , char* ip)
 void *
 insert_to_influxdb(struct FLOW *flow)
 {
-	char addr0[64], addr1[64], stime[32], ftime[32];
+	char addr0[64], addr1[64];
 	char resetbuf[2048];
 	char *ipv4_src = NULL, *ipv4_dst = NULL;
 	char hostname[1024];
@@ -917,8 +917,7 @@ insert_to_elasticsearch(struct FLOW *flow)
 	char hostname[1024];
 	uint16_t port_src, port_dst;
 	char tcp_flags[64];
-	static char *url = "curl -i -XPOST 'http://10.0.0.4:8086/write?db=mydb' --data-binary";
-	uint64_t time_start, time_end;
+	static char *url = "curl -XPOST 'http://localhost:9200/my_index/my_flows/?pretty' -H 'Content-Type: application/json' -d";
 	//ipv4 for now
 	if(flow->af != AF_INET)
 		return;    
@@ -928,8 +927,11 @@ insert_to_elasticsearch(struct FLOW *flow)
 	inet_ntop(flow->af, &flow->addr[0], addr0, sizeof(addr0));
 	inet_ntop(flow->af, &flow->addr[1], addr1, sizeof(addr1));
 
+	snprintf(stime, sizeof(stime), "%s", 
+	    format_time(flow->flow_start.tv_sec));
+	snprintf(ftime, sizeof(ftime), "%s", 
+	    format_time(flow->flow_last.tv_sec));
 	
-
 	if( flow->packets[0] > 0)
 	{
 		ipv4_src = addr0;
@@ -938,10 +940,25 @@ insert_to_elasticsearch(struct FLOW *flow)
 		port_dst = ntohs(flow->port[1]);
 		memset(tcp_flags, 0, sizeof(tcp_flags));
 		strcat(tcp_flags, tcp_flags_to_str(flow->tcp_flags[0]));
-		time_start = flow->flow_start.tv_sec * 1000000000;
-		time_end = flow->flow_last.tv_sec * 1000000000;
-		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s ipv4_src=\"%s\",port_src=%u,ipv4_dst=\"%s\",port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 ",proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
-	,url, hostname, ipv4_src, port_src, ipv4_dst, port_dst, time_start, time_end, protocol_to_str(flow->protocol), tcp_flags,flow->octets[0], flow->packets[0]);
+		snprintf(resetbuf, sizeof(resetbuf), "%s \'\n" 
+"{\n " \
+"\t\"agent_host_name\"       : \"%s\",\n " \
+"\t\"ipv4_dst_addr\"         : \"%s\",\n " \
+"\t\"ipv4_src_addr\"         : \"%s\",\n " \
+"\t\"l4_dst_port\"           : \"%u\",\n " \
+"\t\"l4_src_port\"           : \"%u\",\n " \
+"\t\"tcp_flags\"             : \"%u\",\n " \
+"\t\"tcp_flags_text\"        : \"%s\",\n " \
+"\t\"protocol\"              : \"%u\",\n " \
+"\t\"protocol_text\"         : \"%s\",\n " \
+"\t\"first_switched\"        : \"%u\",\n " \
+"\t\"first_switched_text\"   : \"%s\",\n " \
+"\t\"last_switched\"         : \"%u\",\n " \
+"\t\"last_switched_text\"    : \"%s\",\n " \
+"\t\"in_bytes\"              : \"%u\",\n " \
+"\t\"in_pkts\"               : \"%u\"\n " \
+"} \n\'",url, hostname, ipv4_dst, ipv4_src, port_dst, port_src, flow->tcp_flags[0], tcp_flags, flow->protocol, protocol_to_str(flow->protocol), \
+flow->flow_start.tv_sec, stime, flow->flow_last.tv_sec, ftime, flow->octets[0], flow->packets[0]);
 	
 		logit(LOG_DEBUG,"%s\n",resetbuf);
 		system(resetbuf);
@@ -955,10 +972,26 @@ insert_to_elasticsearch(struct FLOW *flow)
 		port_dst = ntohs(flow->port[0]);
 		memset(tcp_flags, 0, sizeof(tcp_flags));
 		strcat(tcp_flags, tcp_flags_to_str(flow->tcp_flags[1]));
-		time_start = flow->flow_start.tv_sec * 1000000000;
-		time_end = flow->flow_last.tv_sec * 1000000000;
-		snprintf(resetbuf, sizeof(resetbuf), "%s 'myflows,host=%s ipv4_src=\"%s\",port_src=%u,ipv4_dst=\"%s\",port_dst=%u,time_start=%" PRIu64 ",time_end=%" PRIu64 ",proto=\"%s\",tcp_flags=\"%s\",tran_bytes=%u,tran_packets=%u'"
-	,url, hostname, ipv4_src, port_src, ipv4_dst, port_dst, time_start, time_end, protocol_to_str(flow->protocol), tcp_flags,flow->octets[1], flow->packets[1]);
+		
+		snprintf(resetbuf, sizeof(resetbuf), "%s \'\n" 
+"{\n " \
+"\t\"agent_host_name\"       : \"%s\",\n " \
+"\t\"ipv4_dst_addr\"         : \"%s\",\n " \
+"\t\"ipv4_src_addr\"         : \"%s\",\n " \
+"\t\"l4_dst_port\"           : \"%u\",\n " \
+"\t\"l4_src_port\"           : \"%u\",\n " \
+"\t\"tcp_flags\"             : \"%u\",\n " \
+"\t\"tcp_flags_text\"        : \"%s\",\n " \
+"\t\"protocol\"              : \"%u\",\n " \
+"\t\"protocol_text\"         : \"%s\",\n " \
+"\t\"first_switched\"        : \"%u\",\n " \
+"\t\"first_switched_text\"   : \"%s\",\n " \
+"\t\"last_switched\"         : \"%u\",\n " \
+"\t\"last_switched_text\"    : \"%s\",\n " \
+"\t\"in_bytes\"              : \"%u\",\n " \
+"\t\"in_pkts\"               : \"%u\"\n " \
+"} \n\'",url, hostname, ipv4_dst, ipv4_src, port_dst, port_src, flow->tcp_flags[1], tcp_flags, flow->protocol, protocol_to_str(flow->protocol), \
+flow->flow_start.tv_sec, stime, flow->flow_last.tv_sec, ftime, flow->octets[1], flow->packets[1]);
 	
 		logit(LOG_DEBUG,"%s\n",resetbuf);
 		system(resetbuf);
@@ -1093,7 +1126,8 @@ check_expired(struct FLOWTRACK *ft, int ex)
 				    format_flow(expired_flows[i]),
 				    expired_flows[i]);
 			}
-			insert_to_influxdb(expired_flows[i]);
+			//insert_to_influxdb(expired_flows[i]);
+			insert_to_elasticsearch(expired_flows[i]);
 			update_statistics(ft, expired_flows[i]);
 			flow_put(ft, expired_flows[i]);
 		}
