@@ -265,3 +265,25 @@ curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: a
 
 }'
 
+curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: application/json' -d'
+
+{
+
+  "query": {
+
+    "bool": {
+
+      "must": [
+
+        { "match": { "first_switched": "1498624757" } },
+
+        { "match": { "last_switched": "1498624762" } }
+
+      ]
+
+    }
+
+  }
+
+}'
+
