@@ -220,7 +220,7 @@ curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: a
 
   "sort": [
 
-    { "ipv4_src_addr": "asc" }
+    { "last_switched": "asc" }
 
   ]
 }
