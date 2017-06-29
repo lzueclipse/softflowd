@@ -168,6 +168,8 @@ curl -XPUT 'localhost:9200/my_index?pretty' -H 'Content-Type: application/json' 
 		"my_flows" :{
 	
 			"properties" : {
+				
+				"@timestamp":   { "index": "not_analyzed", "type": "date" },
 		
 				"agent_host_name": { "index": "analyzed", "type": "text" },
 		
