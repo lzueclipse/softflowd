@@ -5,7 +5,7 @@
     "_source": {
       "title": "traffic monitor",
       "hits": 0,
-      "description": "Network traffic analysis based on netflow data.",
+      "description": "Network traffic analysis based on tcp flow data.",
       "panelsJSON": "[{\"col\":10,\"id\":\"time_bw_dst_port\",\"row\":7,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":4,\"id\":\"time_bw_src_port\",\"row\":7,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":7,\"id\":\"sum_bw_dst_addr\",\"row\":5,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":10,\"id\":\"sum_bw_dst_port\",\"row\":5,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"sum_bw_src_addr\",\"row\":5,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":4,\"id\":\"sum_bw_src_port\",\"row\":5,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"time_bw\",\"row\":1,\"size_x\":12,\"size_y\":4,\"type\":\"visualization\"},{\"col\":7,\"id\":\"time_bw_dst_addr\",\"row\":7,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"time_bw_src_addr\",\"row\":7,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"}]",
       "version": 1,
       "timeRestore": false,
