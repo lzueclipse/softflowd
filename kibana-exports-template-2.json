@@ -34,26 +34,6 @@
     }
   },
   {
-    "_id": "b2de04f0-5f95-11e7-96b7-9b621c4ccfef",
-    "_type": "search",
-    "_source": {
-      "title": "tcp_rst",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "_source"
-      ],
-      "sort": [
-        "@timestamp",
-        "desc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"my_index\",\"highlightAll\":true,\"version\":true,\"filter\":[],\"query\":{\"query_string\":{\"query\":\"tcp_flags_rst=RST\",\"analyze_wildcard\":true}}}"
-      }
-    }
-  },
-  {
     "_id": "sum_bw_dst_port",
     "_type": "visualization",
     "_source": {
