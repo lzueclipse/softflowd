@@ -917,7 +917,7 @@ insert_to_elasticsearch(struct FLOW *flow)
 	char hostname[1024];
 	uint16_t port_src, port_dst;
 	char tcp_flags_text[64];
-	char tcp_flags_rst[64];
+	uint8_t tcp_flags_rst = 0;
 	struct timeval now;
 	static char *url = "curl -XPOST 'http://localhost:9200/my_index/my_flows/?pretty' -H 'Content-Type: application/json' -d";
 	//ipv4 for now
@@ -942,11 +942,11 @@ insert_to_elasticsearch(struct FLOW *flow)
 		port_src = ntohs(flow->port[0]);
 		port_dst = ntohs(flow->port[1]);
 		memset(tcp_flags_text, 0, sizeof(tcp_flags_text));
-		memset(tcp_flags_rst, 0, sizeof(tcp_flags_rst));
 		strcat(tcp_flags_text, tcp_flags_to_str(flow->tcp_flags[0]));
+		tcp_flags_rst = 0;
 		if(flow->tcp_flags[0] & TH_RST)
 		{
-			strcat(tcp_flags_rst, "RST");
+			tcp_flags_rst = 1;
 		}
 		snprintf(resetbuf, sizeof(resetbuf), "%s \'\n" 
 "{\n " \
@@ -954,19 +954,19 @@ insert_to_elasticsearch(struct FLOW *flow)
 "\t\"agent_host_name\"       : \"%s\",\n " \
 "\t\"ipv4_dst_addr\"         : \"%s\",\n " \
 "\t\"ipv4_src_addr\"         : \"%s\",\n " \
-"\t\"l4_dst_port\"           : \"%u\",\n " \
-"\t\"l4_src_port\"           : \"%u\",\n " \
-"\t\"tcp_flags\"             : \"%u\",\n " \
+"\t\"l4_dst_port\"           : %u,\n " \
+"\t\"l4_src_port\"           : %u,\n " \
+"\t\"tcp_flags\"             : %u,\n " \
 "\t\"tcp_flags_text\"        : \"%s\",\n " \
-"\t\"tcp_flags_rst\"         : \"%s\",\n " \
-"\t\"protocol\"              : \"%u\",\n " \
+"\t\"tcp_flags_rst\"         : %u,\n " \
+"\t\"protocol\"              : %u,\n " \
 "\t\"protocol_text\"         : \"%s\",\n " \
 "\t\"first_switched\"        : %" PRIu64 ",\n " \
 "\t\"first_switched_text\"   : \"%s\",\n " \
 "\t\"last_switched\"         : %" PRIu64 ",\n " \
 "\t\"last_switched_text\"    : \"%s\",\n " \
-"\t\"in_bytes\"              : \"%u\",\n " \
-"\t\"in_pkts\"               : \"%u\"\n " \
+"\t\"in_bytes\"              : %u,\n " \
+"\t\"in_pkts\"               : %u\n " \
 "} \n\'",url, (uint64_t)(now.tv_sec) * 1000, hostname, ipv4_dst, ipv4_src, port_dst, port_src, flow->tcp_flags[0], \
 tcp_flags_text, tcp_flags_rst, flow->protocol, protocol_to_str(flow->protocol), (uint64_t)(flow->flow_start.tv_sec) * 1000 , stime, \
 (uint64_t)(flow->flow_last.tv_sec) * 1000, ftime, flow->octets[0], flow->packets[0]);
@@ -982,12 +982,11 @@ tcp_flags_text, tcp_flags_rst, flow->protocol, protocol_to_str(flow->protocol), 
 		port_src = ntohs(flow->port[1]);
 		port_dst = ntohs(flow->port[0]);
 		memset(tcp_flags_text, 0, sizeof(tcp_flags_text));
-		memset(tcp_flags_rst, 0, sizeof(tcp_flags_rst));
 		strcat(tcp_flags_text, tcp_flags_to_str(flow->tcp_flags[1]));
-		
+		tcp_flags_rst = 0;
 		if(flow->tcp_flags[1] & TH_RST)
 		{
-			strcat(tcp_flags_rst, "RST");
+			tcp_flags_rst = 1;
 		}
 		
 		snprintf(resetbuf, sizeof(resetbuf), "%s \'\n" 
@@ -996,19 +995,19 @@ tcp_flags_text, tcp_flags_rst, flow->protocol, protocol_to_str(flow->protocol), 
 "\t\"agent_host_name\"       : \"%s\",\n " \
 "\t\"ipv4_dst_addr\"         : \"%s\",\n " \
 "\t\"ipv4_src_addr\"         : \"%s\",\n " \
-"\t\"l4_dst_port\"           : \"%u\",\n " \
-"\t\"l4_src_port\"           : \"%u\",\n " \
-"\t\"tcp_flags\"             : \"%u\",\n " \
+"\t\"l4_dst_port\"           : %u,\n " \
+"\t\"l4_src_port\"           : %u,\n " \
+"\t\"tcp_flags\"             : %u,\n " \
 "\t\"tcp_flags_text\"        : \"%s\",\n " \
-"\t\"tcp_flags_rst\"         : \"%s\",\n " \
-"\t\"protocol\"              : \"%u\",\n " \
+"\t\"tcp_flags_rst\"         : %u,\n " \
+"\t\"protocol\"              : %u,\n " \
 "\t\"protocol_text\"         : \"%s\",\n " \
 "\t\"first_switched\"        : %" PRIu64 ",\n " \
 "\t\"first_switched_text\"   : \"%s\",\n " \
 "\t\"last_switched\"         : %" PRIu64 ",\n " \
 "\t\"last_switched_text\"    : \"%s\",\n " \
-"\t\"in_bytes\"              : \"%u\",\n " \
-"\t\"in_pkts\"               : \"%u\"\n " \
+"\t\"in_bytes\"              : %u,\n " \
+"\t\"in_pkts\"               : %u\n " \
 "} \n\'",url, (uint64_t)(now.tv_sec) * 1000, hostname, ipv4_dst, ipv4_src, port_dst, port_src, flow->tcp_flags[1], tcp_flags_text, tcp_flags_rst,\
 flow->protocol, protocol_to_str(flow->protocol), (uint64_t)(flow->flow_start.tv_sec) * 1000, stime, (uint64_t)(flow->flow_last.tv_sec) * 1000, \
 ftime, flow->octets[1], flow->packets[1]);
