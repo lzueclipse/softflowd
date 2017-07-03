@@ -291,3 +291,9 @@ curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: a
 
 }'
 
+curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: application/json' -d'
+{
+  "query": { "match": { "has_tcp_rst": 1 } }
+}
+'
+
