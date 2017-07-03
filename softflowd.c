@@ -958,7 +958,7 @@ insert_to_elasticsearch(struct FLOW *flow)
 "\t\"l4_src_port\"           : %u,\n " \
 "\t\"tcp_flags\"             : %u,\n " \
 "\t\"tcp_flags_text\"        : \"%s\",\n " \
-"\t\"tcp_flags_rst\"         : %u,\n " \
+"\t\"has_tcp_rst\"           : %u,\n " \
 "\t\"protocol\"              : %u,\n " \
 "\t\"protocol_text\"         : \"%s\",\n " \
 "\t\"first_switched\"        : %" PRIu64 ",\n " \
@@ -999,7 +999,7 @@ tcp_flags_text, tcp_flags_rst, flow->protocol, protocol_to_str(flow->protocol), 
 "\t\"l4_src_port\"           : %u,\n " \
 "\t\"tcp_flags\"             : %u,\n " \
 "\t\"tcp_flags_text\"        : \"%s\",\n " \
-"\t\"tcp_flags_rst\"         : %u,\n " \
+"\t\"has_tcp_rst\"           : %u,\n " \
 "\t\"protocol\"              : %u,\n " \
 "\t\"protocol_text\"         : \"%s\",\n " \
 "\t\"first_switched\"        : %" PRIu64 ",\n " \

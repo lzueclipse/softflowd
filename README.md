@@ -185,7 +185,7 @@ curl -XPUT 'localhost:9200/my_index?pretty' -H 'Content-Type: application/json' 
 				
 				"tcp_flags_text": { "index": "not_analyzed", "type": "text" },
 				
-				"tcp_flags_rst": { "index": "not_analyzed", "type": "long" },
+				"has_tcp_rst": { "index": "not_analyzed", "type": "long" },
 
 				"protocol": { "index": "not_analyzed", "type": "long" },
 				
@@ -291,12 +291,3 @@ curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: a
 
 }'
 
-curl -XGET 'localhost:9200/my_index/my_flows/_search?pretty' -H 'Content-Type: application/json' -d'
-
-{
-
-  "query": { "match": { "tcp_flags_rst": "RST" } }
-
-}
-
-'
