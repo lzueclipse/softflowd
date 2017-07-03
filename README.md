@@ -184,6 +184,8 @@ curl -XPUT 'localhost:9200/my_index?pretty' -H 'Content-Type: application/json' 
 				"tcp_flags": { "index": "not_analyzed", "type": "long" },
 				
 				"tcp_flags_text": { "index": "not_analyzed", "type": "text" },
+				
+				"tcp_flags_rst": { "index": "not_analyzed", "type": "text" },
 
 				"protocol": { "index": "not_analyzed", "type": "long" },
 				
